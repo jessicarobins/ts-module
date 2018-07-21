@@ -27,7 +27,7 @@ const initialState = {
   user: null
 }
 
-const actions = ({ router, firebase, bugsnagClient }) => {
+const actions = ({ router, firebase, bugsnagClient }) => ({
   async onUserLogin({ commit, dispatch, state }, authUser) {
     commit('incrementUserLoading')
     try {
@@ -203,7 +203,7 @@ const actions = ({ router, firebase, bugsnagClient }) => {
     displayMessage('You have been successfully unsubscribed.')
     commit('setSubscriptionLoading', false)
   }
-}
+})
 
 const FREE_IMAGE_COUNT = 5
 const hasSubscription = status => ['trialing', 'active'].includes(status)
@@ -271,9 +271,9 @@ const mutations = {
   }
 }
 
-export default {
+export default ({ router, firebase, bugsnagClient }) => ({
   state: initialState,
-  actions,
+  actions: actions({ router, firebase, bugsnagClient }),
   getters,
   mutations
-}
+})
