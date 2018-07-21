@@ -1,0 +1,12 @@
+{
+  "name": "tt-module",
+  "version": "0.0.1",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jessicarobins/tt-module.git"
+  },
+  "peerDependencies": {
+    "firebase": "^5.3.0"
+  }
+}
