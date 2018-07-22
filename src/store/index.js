@@ -8,6 +8,7 @@
 // import site from './site'
 
 export { default as auth } from './auth'
+export { default as lines } from './lines'
 
 // export default function({ bugsnagClient, router, firebase, debug }) {
 //   return {

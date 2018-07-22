@@ -3,10 +3,10 @@ import get from 'lodash/get'
 import uniq from 'lodash/uniq'
 import CryptoJS from 'crypto-js'
 import uuidv4 from 'uuid/v4'
-import { plugins } from '@/firebase'
-import router from '@/router'
-import { groupByDateFormat } from '@/util'
-import { Snackbar } from 'buefy'
+// import { plugins } from '@/firebase'
+// import router from '@/router'
+import { groupByDateFormat } from '../util'
+// import { Snackbar } from 'buefy'
 
 const initialState = {
   hasToday: false,
@@ -86,23 +86,23 @@ async function uploadImage(uid, file) {
   return Promise.resolve(null)
 }
 
-function openSubscribeSnackbar() {
-  Snackbar.open({
-    message: 'You have reached the max free image uploads for this month',
-    type: 'is-primary',
-    position: 'is-bottom',
-    actionText: 'Upgrade',
-    duration: 6000,
-    onAction: () => {
-      router.push({ name: 'Upgrade' })
-    }
-  })
-}
+// function openSubscribeSnackbar() {
+//   Snackbar.open({
+//     message: 'You have reached the max free image uploads for this month',
+//     type: 'is-primary',
+//     position: 'is-bottom',
+//     actionText: 'Upgrade',
+//     duration: 6000,
+//     onAction: () => {
+//       router.push({ name: 'Upgrade' })
+//     }
+//   })
+// }
 
-const actions = {
+const actions = ({ firebase }) => ({
   async addLine({ commit, rootGetters, rootState }, { image, text, tags }) {
     if (image && rootGetters.hasMaxImages) {
-      return openSubscribeSnackbar()
+      return //openSubscribeSnackbar()
     }
 
     commit('setLinesLoading', true)
@@ -120,7 +120,7 @@ const actions = {
       tags: tagObject,
       text: encryptedText,
     }
-    const { id } = await plugins.db
+    const { id } = await firebase.db()
       .collection('users')
       .doc(uid)
       .collection('lines')
@@ -145,7 +145,7 @@ const actions = {
     const newImageUrl = await uploadImage(uid, image) || imageUrl
     const tagObject = getTagObjectFromArray(tags)
 
-    const lineRef = plugins.db
+    const lineRef = firebase.db()
       .collection('users')
       .doc(uid)
       .collection('lines')
@@ -165,7 +165,7 @@ const actions = {
   async getLines({ commit, rootState }, { tag } = {}) {
     const { user, encryptionKey } = rootState.auth
     commit('setLinesLoading', true)
-    let snapshotPromise = plugins.db
+    let snapshotPromise = firebase.db()
       .collection('users')
       .doc(user.uid)
       .collection('lines')
@@ -187,7 +187,7 @@ const actions = {
     commit('setTags', tags)
     commit('setLinesLoading', false)
   },
-}
+})
 
 const getters = {
   hasToday: state => state.hasToday,
@@ -232,9 +232,9 @@ const mutations = {
   },
 }
 
-export default {
+export default ({ firebase }) => ({
   state: initialState,
-  actions,
+  actions: actions({ firebase }),
   getters,
   mutations
-}
+})

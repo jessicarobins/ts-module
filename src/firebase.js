@@ -22,6 +22,12 @@ module.exports = class FirebaseService {
       storageBucket,
       messagingSenderId
     })
+
+    this.messaging = firebase.messaging
+  }
+
+  auth() {
+    return firebase.auth()
   }
 
   db() {

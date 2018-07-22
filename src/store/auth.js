@@ -27,7 +27,7 @@ const initialState = {
   user: null
 }
 
-const actions = ({ router, firebase, bugsnagClient }) => ({
+const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError }) => ({
   async onUserLogin({ commit, dispatch, state }, authUser) {
     commit('incrementUserLoading')
     try {
@@ -43,19 +43,16 @@ const actions = ({ router, firebase, bugsnagClient }) => ({
 
       dispatch('getSubscription')
     } catch (err) {
-      bugsnagClient.notify(err)
+      if (bugsnagClient) {
+        bugsnagClient.notify(err)
+      }
       displayError(err)
     }
     commit('decrementUserLoading')
   },
   async getEncryptionKey({ commit }) {
-    try {
-      const { claims } = await firebase.auth().currentUser.getIdTokenResult()
-      commit('setEncryptionKey', claims.encryptionKey)
-    } catch (err) {
-      bugsnagClient.notify(err)
-      console.log(err)
-    }
+    const { claims } = await firebase.auth().currentUser.getIdTokenResult()
+    commit('setEncryptionKey', claims.encryptionKey)
   },
   async getSubscription({ commit }) {
     commit('setSubscriptionLoading', true)
@@ -123,8 +120,10 @@ const actions = ({ router, firebase, bugsnagClient }) => ({
       await dispatch('updateUser', { sendNotifications, reminderTime })
       displayMessage('Notification settings updated!')
     } catch (err) {
-      bugsnagClient.notify(err)
-      displayError(err)
+      if (bugsnagClient) {
+        bugsnagClient.notify(err)
+        displayError(err)
+      }
     }
     commit('decrementUserLoading')
   },
@@ -136,10 +135,12 @@ const actions = ({ router, firebase, bugsnagClient }) => ({
       if (line) {
         await dispatch('addLine', line)
       }
-      router.push('/home')
+      router.push('Home')
     } catch (err) {
-      bugsnagClient.notify(err)
-      displayError(err)
+      if (bugsnagClient) {
+        bugsnagClient.notify(err)
+        displayError(err)
+      }
     }
     commit('decrementUserLoading')
   },
@@ -159,9 +160,11 @@ const actions = ({ router, firebase, bugsnagClient }) => ({
       if (line) {
         await dispatch('addLine', line)
       }
-      router.push('/home')
+      router.push('Home')
     } catch (err) {
-      bugsnagClient.notify(err)
+      if (bugsnagClient) {
+        bugsnagClient.notify(err)
+      }
       displayError(err)
     }
     commit('decrementUserLoading')
@@ -171,7 +174,7 @@ const actions = ({ router, firebase, bugsnagClient }) => ({
     commit('resetUser')
     commit('resetLines')
     commit('toggleNotificationBanner', false)
-    router.push('/login')
+    router.push('Login')
   },
   async subscribeUser({ commit }, { coupon, token }) {
     const { data } = await firebase.functions().addSubscription({
@@ -183,7 +186,7 @@ const actions = ({ router, firebase, bugsnagClient }) => ({
     commit('modifyUserSubscription', data)
 
     displayMessage('Subscription successful!')
-    router.push('/home')
+    router.push('Home')
   },
   async resubscribeUser({ commit }) {
     commit('setSubscriptionLoading', true)
