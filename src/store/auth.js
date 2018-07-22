@@ -135,7 +135,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
       if (line) {
         await dispatch('addLine', line)
       }
-      router.push('Home')
+      router.push({ name: 'Home' })
     } catch (err) {
       if (bugsnagClient) {
         bugsnagClient.notify(err)
@@ -160,7 +160,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
       if (line) {
         await dispatch('addLine', line)
       }
-      router.push('Home')
+      router.push({ name: 'Home' })
     } catch (err) {
       if (bugsnagClient) {
         bugsnagClient.notify(err)
@@ -174,7 +174,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
     commit('resetUser')
     commit('resetLines')
     commit('toggleNotificationBanner', false)
-    router.push('Login')
+    router.push({ name: 'Login' })
   },
   async subscribeUser({ commit }, { coupon, token }) {
     const { data } = await firebase.functions().addSubscription({
@@ -186,7 +186,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
     commit('modifyUserSubscription', data)
 
     displayMessage('Subscription successful!')
-    router.push('Home')
+    router.push({ name: 'Home' })
   },
   async resubscribeUser({ commit }) {
     commit('setSubscriptionLoading', true)

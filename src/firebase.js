@@ -31,11 +31,11 @@ module.exports = class FirebaseService {
   }
 
   db() {
-    if (!this.db) {
-      this.db = firebase.firestore()
-      this.db.settings({ timestampsInSnapshots: true })
+    if (!this.firestore) {
+      this.firestore = firebase.firestore()
+      this.firestore.settings({ timestampsInSnapshots: true })
     }
-    return this.db
+    return this.firestore
   }
 
   functions() {
