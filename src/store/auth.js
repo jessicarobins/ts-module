@@ -29,7 +29,6 @@ const initialState = {
 
 const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError }) => ({
   async onUserLogin({ commit, dispatch, state }, authUser) {
-    commit('incrementUserLoading')
     try {
       commit('setUser', authUser)
       await dispatch('getUserSettings')
@@ -269,14 +268,14 @@ const mutations = {
     state.subscription.loading = loading
   },
   setUser(state, { uid, email }) {
-    bugsnagClient.user = { uid, email }
+    // bugsnagClient.user = { uid, email }
     state.user = { uid, email }
   }
 }
 
-export default ({ router, firebase, bugsnagClient }) => ({
+export default ({ router, firebase, bugsnagClient, displayError }) => ({
   state: initialState,
-  actions: actions({ router, firebase, bugsnagClient }),
+  actions: actions({ router, firebase, bugsnagClient, displayError }),
   getters,
   mutations
 })

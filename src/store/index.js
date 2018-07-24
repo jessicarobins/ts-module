@@ -9,6 +9,7 @@
 
 export { default as auth } from './auth'
 export { default as lines } from './lines'
+export { default as site } from './site'
 
 // export default function({ bugsnagClient, router, firebase, debug }) {
 //   return {
