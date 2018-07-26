@@ -18,7 +18,7 @@ const subscriptionInitialState = {
 const initialState = {
   blockedInBrowser: false,
   encryptionKey: null,
-  loading: 0,
+  loading: 1,
   settings: {
     imageCount: 0,
     reminderTime: defaultReminderTime,
@@ -27,50 +27,14 @@ const initialState = {
   user: null
 }
 
-const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError }) => ({
-  async onUserLogin({ commit, dispatch, state }, authUser) {
-    try {
-      commit('setUser', authUser)
-      await dispatch('getUserSettings')
-      await dispatch('getEncryptionKey')
-      // user hasn't explicitly turned off notifications
-      if (state.settings.sendNotifications === true) {
-        dispatch('requestMessagingPermission')
-      } else if (state.settings.sendNotifications === undefined) {
-        commit('toggleNotificationBanner', true)
-      }
-
-      dispatch('getSubscription')
-    } catch (err) {
-      if (bugsnagClient) {
-        bugsnagClient.notify(err)
-      }
-      displayError(err)
-    }
-    commit('decrementUserLoading')
-  },
-  async getEncryptionKey({ commit }) {
-    const { claims } = await firebase.auth().currentUser.getIdTokenResult()
-    commit('setEncryptionKey', claims.encryptionKey)
-  },
-  async getSubscription({ commit }) {
-    commit('setSubscriptionLoading', true)
-    const subscription = await firebase.functions().getSubscription()
-    if (subscription && subscription.data) {
-      commit('modifyUserSubscription', subscription.data)
-    }
-    commit('setSubscriptionLoading', false)
-  },
-  async getUserSettings({ commit, state }) {
-    const doc = await firebase.db()
-      .collection('users')
-      .doc(state.user.uid)
-      .get()
-
-    const data = doc.data()
-
-    if (data) {
-      commit('modifyUserSettings', data)
+// for web, will be
+const authActions = {
+  async handleMessaging({ state, commit, dispatch }) {
+    // user hasn't explicitly turned off notifications
+    if (state.settings.sendNotifications === true) {
+      dispatch('requestMessagingPermission')
+    } else if (state.settings.sendNotifications === undefined) {
+      commit('toggleNotificationBanner', true)
     }
   },
   async requestMessagingPermission({ commit, dispatch }, { notify = false } = {}) {
@@ -103,8 +67,45 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
       sendNotifications: !!messagingTokens
     })
   },
+}
+
+const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError, ...additionalActions = {} }) => ({
+  ...additionalActions,
+  async onUserLogin({ commit, dispatch, state }, authUser) {
+    commit('setUser', authUser)
+    await dispatch('getUserSettings')
+    await dispatch('getEncryptionKey')
+    dispatch('handleMessaging')
+    // dispatch('getSubscription')
+    commit('decrementUserLoading')
+  },
+  async getEncryptionKey({ commit }) {
+    const { claims } = await firebase.auth().currentUser.getIdTokenResult()
+    commit('setEncryptionKey', claims.encryptionKey)
+  },
+  async getSubscription({ commit }) {
+    commit('setSubscriptionLoading', true)
+    const subscription = await firebase.functions().getSubscription()
+    if (subscription && subscription.data) {
+      commit('modifyUserSubscription', subscription.data)
+    }
+    commit('setSubscriptionLoading', false)
+  },
+  async getUserSettings({ commit, state }) {
+    const doc = await firebase.db()
+      .collection('users')
+      .doc(state.user.uid)
+      .get()
+
+    const data = doc.data()
+
+    if (data) {
+      commit('modifyUserSettings', data)
+    }
+  },
   async updateUser({ commit, state }, attributes) {
     const nonEmptyAttributes = omitBy(attributes, attribute => attribute === undefined)
+    console.log('updating user with attributes', nonEmptyAttributes)
     await firebase.db()
       .collection('users')
       .doc(state.user.uid)
@@ -134,13 +135,15 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
       if (line) {
         await dispatch('addLine', line)
       }
+      console.log('redirecting')
       router.push({ name: 'Home' })
     } catch (err) {
       if (bugsnagClient) {
         bugsnagClient.notify(err)
-        displayError(err)
       }
+      displayError(err)
     }
+    console.log('user is done loading')
     commit('decrementUserLoading')
   },
   async userEmailSignUp({ commit, dispatch }, { user: { email, password }, line }) {
@@ -148,6 +151,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
     try {
       const doc = await firebase.auth().createUserWithEmailAndPassword(email, password)
       const idToken = await doc.user.getIdToken()
+      console.log('idToken?', idToken)
       const { data } = await firebase.functions().setEncryptionKey({ idToken })
       firebase.auth().currentUser.getIdToken(true)
       commit('setEncryptionKey', data.encryptionKey)
@@ -161,6 +165,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
       }
       router.push({ name: 'Home' })
     } catch (err) {
+      console.log('error: ', err)
       if (bugsnagClient) {
         bugsnagClient.notify(err)
       }
@@ -170,10 +175,10 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
   },
   async userSignOut({ commit }) {
     await firebase.auth().signOut()
+    router.push({ name: 'Login' })
     commit('resetUser')
     commit('resetLines')
     commit('toggleNotificationBanner', false)
-    router.push({ name: 'Login' })
   },
   async subscribeUser({ commit }, { coupon, token }) {
     const { data } = await firebase.functions().addSubscription({
@@ -273,9 +278,9 @@ const mutations = {
   }
 }
 
-export default ({ router, firebase, bugsnagClient, displayError }) => ({
+export default ({ router, firebase, bugsnagClient, displayError, ...additionalActions }) => ({
   state: initialState,
-  actions: actions({ router, firebase, bugsnagClient, displayError }),
+  actions: actions({ router, firebase, bugsnagClient, displayError, ...additionalActions }),
   getters,
   mutations
 })

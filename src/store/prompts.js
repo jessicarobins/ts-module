@@ -1,9 +1,8 @@
 import get from 'lodash/get'
 import moment from 'moment'
-import { plugins } from '@/firebase'
 
 const initialState = {
-  loading: false,
+  loading: true,
   prompts: []
 }
 
@@ -17,11 +16,11 @@ function formatPromptSnapshot(snapshot) {
   return prompts
 }
 
-const actions = {
+const actions = ({ firebase }) => ({
   async getPrompts({ commit }) {
     commit('setPromptsLoading', true)
     const date = moment().format('MMMM D')
-    const snapshot = await plugins.db
+    const snapshot = await firebase.db()
       .collection('prompts')
       .where('date', '==', date)
       .get()
@@ -29,7 +28,7 @@ const actions = {
     commit('setPrompts', formatPromptSnapshot(snapshot))
     commit('setPromptsLoading', false)
   }
-}
+})
 
 const getters = {
   prompt: state => get(state, 'prompts[0].prompt', 'What do you want to say today?'),
@@ -45,9 +44,9 @@ const mutations = {
   }
 }
 
-export default {
+export default ({ firebase }) => ({
   state: initialState,
-  actions,
+  actions: actions({ firebase }),
   getters,
   mutations
-}
+})
