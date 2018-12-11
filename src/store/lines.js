@@ -49,7 +49,7 @@ function formatLineCollectionSnapshot(snapshot, encryptionKey) {
 
   snapshot.forEach((doc) => {
     const data = doc.data()
-    const date = moment(data.createdAt.toDate()).format(groupByDateFormat)
+    const date = moment(data.createdAt).format(groupByDateFormat)
     const textBytes = CryptoJS.AES.decrypt(data.text, encryptionKey)
     const text = textBytes.toString(CryptoJS.enc.Utf8)
     const line = { ...data, text, id: doc.id }
@@ -58,7 +58,7 @@ function formatLineCollectionSnapshot(snapshot, encryptionKey) {
     } else {
       lines[date] = [line]
     }
-    if (today.isSame(moment(data.createdAt.toDate()), 'd')) {
+    if (today.isSame(moment(data.createdAt), 'd')) {
       hasToday = true
     }
 
@@ -120,7 +120,7 @@ const actions = ({ firebase }) => ({
       tags: tagObject,
       text: encryptedText,
     }
-    const { id } = await firebase.db()
+    const { id } = await firebase.firestore()
       .collection('users')
       .doc(uid)
       .collection('lines')
@@ -145,7 +145,7 @@ const actions = ({ firebase }) => ({
     const newImageUrl = await uploadImage(uid, image) || imageUrl
     const tagObject = getTagObjectFromArray(tags)
 
-    const lineRef = firebase.db()
+    const lineRef = firebase.firestore()
       .collection('users')
       .doc(uid)
       .collection('lines')
@@ -165,7 +165,7 @@ const actions = ({ firebase }) => ({
   async getLines({ commit, rootState }, { tag } = {}) {
     const { user, encryptionKey } = rootState.auth
     commit('setLinesLoading', true)
-    let snapshotPromise = firebase.db()
+    let snapshotPromise = firebase.firestore()
       .collection('users')
       .doc(user.uid)
       .collection('lines')

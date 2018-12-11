@@ -20,7 +20,7 @@ const actions = ({ firebase }) => ({
   async getPrompts({ commit }) {
     commit('setPromptsLoading', true)
     const date = moment().format('MMMM D')
-    const snapshot = await firebase.db()
+    const snapshot = await firebase.firestore()
       .collection('prompts')
       .where('date', '==', date)
       .get()

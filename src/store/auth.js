@@ -1,6 +1,7 @@
 import get from 'lodash/get'
 import merge from 'lodash/merge'
 import omitBy from 'lodash/omitBy'
+import jwtDecode from 'jwt-decode'
 
 import { defaultReminderTime } from '../util'
 
@@ -75,13 +76,14 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
     commit('setUser', authUser)
     await dispatch('getUserSettings')
     await dispatch('getEncryptionKey')
-    dispatch('handleMessaging')
+    // dispatch('handleMessaging')
     // dispatch('getSubscription')
     commit('decrementUserLoading')
   },
   async getEncryptionKey({ commit }) {
-    const { claims } = await firebase.auth().currentUser.getIdTokenResult()
-    commit('setEncryptionKey', claims.encryptionKey)
+    const token = await firebase.auth().currentUser.getIdToken()
+    const { encryptionKey } = jwtDecode(token)
+    commit('setEncryptionKey', encryptionKey)
   },
   async getSubscription({ commit }) {
     commit('setSubscriptionLoading', true)
@@ -92,7 +94,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
     commit('setSubscriptionLoading', false)
   },
   async getUserSettings({ commit, state }) {
-    const doc = await firebase.db()
+    const doc = await firebase.firestore()
       .collection('users')
       .doc(state.user.uid)
       .get()
@@ -106,7 +108,7 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
   async updateUser({ commit, state }, attributes) {
     const nonEmptyAttributes = omitBy(attributes, attribute => attribute === undefined)
     console.log('updating user with attributes', nonEmptyAttributes)
-    await firebase.db()
+    await firebase.firestore()
       .collection('users')
       .doc(state.user.uid)
       .set(nonEmptyAttributes, { merge: true })
@@ -147,12 +149,13 @@ const actions = ({ router, firebase, bugsnagClient, displayMessage, displayError
     commit('decrementUserLoading')
   },
   async userEmailSignUp({ commit, dispatch }, { user: { email, password }, line }) {
+    const setEncryptionKey = firebase.functions().httpsCallable('setEncryptionKey')
     commit('incrementUserLoading')
     try {
       const doc = await firebase.auth().createUserWithEmailAndPassword(email, password)
       const idToken = await doc.user.getIdToken()
       console.log('idToken?', idToken)
-      const { data } = await firebase.functions().setEncryptionKey({ idToken })
+      const { data } = await setEncryptionKey({ idToken })
       firebase.auth().currentUser.getIdToken(true)
       commit('setEncryptionKey', data.encryptionKey)
       commit('setUser', doc.user)
